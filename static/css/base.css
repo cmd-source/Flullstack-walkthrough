@@ -57,6 +57,12 @@ body {
     z-index: -1;
 }
 
+a.category-badge > span.badge:hover {
+    background: #212529 !important;
+    color: #fff !important;
+}
+
+
 /* Slightly larger container on xl screens */
 @media (min-width: 1200px) {
     .container {
