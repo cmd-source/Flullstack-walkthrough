@@ -6,6 +6,7 @@ from products.models import Product
 
 
 def view_bag(request):
+    ''' View the bag'''
     return render(request, 'bag/bag.html')
 
 

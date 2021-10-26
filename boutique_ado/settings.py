@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'home',
     'products',
     'checkout',
+    'bag'
 ]
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
