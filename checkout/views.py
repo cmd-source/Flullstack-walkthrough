@@ -9,9 +9,8 @@ from bag.context import bag_content
 
 import stripe
 
+
 def checkout(request):
-
-
     stripe_public_key = settings.STRIPE_PUBLIC_KEY
     stripe_secret_key = settings.STRIPE_SECRET_KEY
 
@@ -30,6 +29,7 @@ def checkout(request):
             'county': request.POST['county'],
         }
         order_form = OrderForm(form_data)
+        print(order_form)
         if order_form.is_valid():
             order = order_form.save()
             for item_id, item_data in bag.items():
@@ -60,38 +60,39 @@ def checkout(request):
                     return redirect(reverse('view_bag'))
 
             request.session['save_info'] = 'save-info' in request.POST
+            print(order.order_number)
             return redirect(reverse('checkout_success', args=[order.order_number]))
         else:
             messages.error(request, 'There was an error with your form. \
                 Please double check your information.')
+    else:
+        bag = request.session.get('bag', {})
+        if not bag:
+            messages.error(request, "There's nothing in your bag at the moment")
+            return redirect(reverse('products'))
 
-    bag = request.session.get('bag', {})
-    if not bag:
-        messages.error(request, "There's nothing in your bag at the moment")
-        return redirect(reverse('products'))
+        current_bag = bag_content(request)
+        total = current_bag['grand_total']
+        stripe_total = round(total * 100)
+        stripe.api_key = stripe_secret_key
+        stripe.PaymentIntent.create(
+            amount=stripe_total,
+            currency=settings.STRIPE_CURRENCY
+        )
 
-    current_bag = bag_content(request)
-    total = current_bag['grand_total']
-    stripe_total = round(total * 100)
-    stripe.api_key = stripe_secret_key
-    stripe.PaymentIntent.create(
-        amount=stripe_total,
-        currency=settings.STRIPE_CURRENCY
-    )
+        order_form = OrderForm()
 
-    order_form = OrderForm()
+        if not stripe_public_key:
+            messages.warning(request, 'Your strip public key is missing. Did you set it in your enviroment')
 
-    if not stripe_public_key:
-        messages.warning(request, 'Your strip public key is missing. Did you set it in your enviroment')
+        template = 'checkout/checkout.html'
+        context = {
+            'order_form': order_form,
+            'stripe_public_key': 'stripe_public_key',
+            'stripe_secret_key': 'stripe_secret_key'
+        }
 
-    template = 'checkout/checkout.html'
-    context = {
-        'order_form': order_form,
-        'stripe_public_key': 'stripe_public_key',
-        'stripe_secret_key': 'stripe_secret_key'
-    }
-
-    return render(request, template, context)
+        return render(request, template, context)
 
 
 def checkout_success(request, order_number):
