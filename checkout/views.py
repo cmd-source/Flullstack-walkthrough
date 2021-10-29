@@ -15,6 +15,7 @@ def checkout(request):
     stripe_secret_key = settings.STRIPE_SECRET_KEY
 
     if request.method == 'POST':
+        print('hello look at me')
         bag = request.session.get('bag', {})
 
         form_data = {
@@ -75,24 +76,25 @@ def checkout(request):
         total = current_bag['grand_total']
         stripe_total = round(total * 100)
         stripe.api_key = stripe_secret_key
-        stripe.PaymentIntent.create(
+        intent = stripe.PaymentIntent.create(
             amount=stripe_total,
             currency=settings.STRIPE_CURRENCY
         )
 
         order_form = OrderForm()
 
-        if not stripe_public_key:
-            messages.warning(request, 'Your strip public key is missing. Did you set it in your enviroment')
+    if not stripe_public_key:
+        messages.warning(request, 'Your strip public key is missing.\
+             Did you set it in your enviroment')
 
-        template = 'checkout/checkout.html'
-        context = {
+    template = 'checkout/checkout.html'
+    context = {
             'order_form': order_form,
-            'stripe_public_key': 'stripe_public_key',
-            'stripe_secret_key': 'stripe_secret_key'
+            'stripe_public_key': stripe_public_key,
+            'stripe_secret_key': intent.client_secret
         }
 
-        return render(request, template, context)
+    return render(request, template, context)
 
 
 def checkout_success(request, order_number):
